@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — CoachAI{% endblock %}
+{% set active = 'dashboard' %}
+
+{% block content %}
+<div class="dash-shell">
+  <aside class="dash-sidebar glass d-none d-lg-block">
+    <div class="dash-nav-item active"><i class="bi bi-grid-1x2"></i> Overview</div>
+    <div class="dash-nav-item"><i class="bi bi-file-earmark-text"></i> Resume Status</div>
+    <div class="dash-nav-item"><i class="bi bi-speedometer2"></i> ATS Score</div>
+    <div class="dash-nav-item"><i class="bi bi-mic"></i> Interview Readiness</div>
+    <div class="dash-nav-item"><i class="bi bi-clock-history"></i> Activity</div>
+    <div class="dash-nav-item"><i class="bi bi-gear"></i> Settings</div>
+  </aside>
+
+  <div class="dash-content">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <div>
+        <h3 class="mb-1">Welcome back 👋</h3>
+        <p class="text-muted-c mb-0">Here's where your job search stands today — live from your session.</p>
+      </div>
+      <a href="{{ url_for('upload') }}" class="magnetic-wrap magnetic"><button class="btn-ai btn-ai-primary">{{ 'Re-scan Resume' if resume_uploaded else 'Upload Resume' }} <i class="bi bi-arrow-clockwise"></i></button></a>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-md-3 col-6">
+        <div class="glass stat-card">
+          <div class="text-muted-c small mb-1">ATS Score</div>
+          {% if ats_score is not none %}
+          <div class="val counter" data-target="{{ ats_score }}">0</div>
+          <div class="delta">From your latest scan</div>
+          {% else %}
+          <div class="val">—</div>
+          <div class="delta text-muted-c">No scan yet</div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="glass stat-card">
+          <div class="text-muted-c small mb-1">Interview Readiness</div>
+          {% if interview_readiness is not none %}
+          <div class="val counter" data-target="{{ interview_readiness }}" data-suffix="%">0%</div>
+          <div class="delta">Avg. across this session</div>
+          {% else %}
+          <div class="val">—</div>
+          <div class="delta text-muted-c">No interviews yet</div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="glass stat-card"><div class="text-muted-c small mb-1">Mock Interviews</div><div class="val counter" data-target="{{ mock_interview_count }}">0</div><div class="delta">This session</div></div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="glass stat-card">
+          <div class="text-muted-c small mb-1">Resume Status</div>
+          <div class="val" style="font-size:1.5rem;">{{ 'Uploaded ✅' if resume_uploaded else 'Not uploaded' }}</div>
+          <div class="delta {{ '' if resume_uploaded else 'text-muted-c' }}">{{ 'Ready for scanning' if resume_uploaded else 'Upload to get started' }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="glass p-4 mb-4">
+          <h6 class="text-muted-c text-uppercase small mb-3">ATS Score Trend</h6>
+          {% if trend_scores %}
+          <canvas id="trendChart" height="110"></canvas>
+          {% else %}
+          <p class="text-muted-c mb-0">Scan your resume to start tracking your ATS score over time.</p>
+          {% endif %}
+        </div>
+        <div class="glass p-4">
+          <h6 class="text-muted-c text-uppercase small mb-3">Recent Activity</h6>
+          {% for item in activity %}
+          <div class="activity-item" {% if loop.last %}style="border-bottom:none;"{% endif %}>
+            <div class="activity-dot"></div>
+            <div><div>{{ item.text }}</div><div class="text-muted-c small">{{ item.ts }}</div></div>
+          </div>
+          {% else %}
+          <p class="text-muted-c mb-0">Nothing yet — upload a resume, run a scan, or chat with your AI coach to see activity here.</p>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="glass p-4 mb-4 text-center">
+          <h6 class="text-muted-c text-uppercase small mb-3">Interview Readiness</h6>
+          <div class="score-ring-wrap" style="width:150px;height:150px;">
+            <svg width="150" height="150">
+              <circle cx="75" cy="75" r="64" stroke="var(--bg-panel-2)" stroke-width="12" fill="none"/>
+              <circle id="ready-circle" cx="75" cy="75" r="64" stroke="var(--accent-cyan)" stroke-width="12" fill="none"
+                stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402" transform="rotate(-90 75 75)"/>
+            </svg>
+            <div class="score-ring-num"><div class="val" style="font-size:1.7rem;">{{ interview_readiness if interview_readiness is not none else '—' }}{{ '%' if interview_readiness is not none else '' }}</div></div>
+          </div>
+        </div>
+        <div class="glass p-4">
+          <h6 class="text-muted-c text-uppercase small mb-3">Skill Coverage</h6>
+          {% if skill_matched or skill_missing %}
+          <canvas id="skillChart"></canvas>
+          {% else %}
+          <p class="text-muted-c mb-0">Run an ATS scan to see your matched vs. missing keyword breakdown.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    animateCounters();
+    const readyCircle = document.getElementById('ready-circle');
+    const readiness = {{ interview_readiness if interview_readiness is not none else 0 }};
+    readyCircle.style.strokeDashoffset = 402 - (402*readiness/100);
+  }, 300);
+
+  const rootStyles = getComputedStyle(document.documentElement);
+  const violet = rootStyles.getPropertyValue('--accent-violet').trim() || '#ff2b3d';
+  const cyan = rootStyles.getPropertyValue('--accent-cyan').trim() || '#ff8a3d';
+  const muted = rootStyles.getPropertyValue('--text-muted').trim() || '#a88888';
+
+  const trendCanvas = document.getElementById('trendChart');
+  if(trendCanvas){
+    new Chart(trendCanvas, {
+      type: 'line',
+      data: {
+        labels: {{ trend_labels | tojson }},
+        datasets: [{
+          label: 'ATS Score',
+          data: {{ trend_scores | tojson }},
+          borderColor: violet,
+          backgroundColor: 'rgba(255,43,61,0.15)',
+          fill: true, tension: 0.4, pointBackgroundColor: cyan, borderWidth: 3,
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: muted } },
+          y: { min: 0, max: 100, grid: { color: 'rgba(255,90,90,0.08)' }, ticks: { color: muted } }
+        }
+      }
+    });
+  }
+
+  const skillCanvas = document.getElementById('skillChart');
+  if(skillCanvas){
+    new Chart(skillCanvas, {
+      type: 'doughnut',
+      data: {
+        labels: ['Matched', 'Missing'],
+        datasets: [{
+          data: [{{ skill_matched }}, {{ skill_missing }}],
+          backgroundColor: [cyan, 'rgba(255,90,90,0.3)'],
+          borderWidth: 0,
+        }]
+      },
+      options: {
+        plugins: { legend: { position: 'bottom', labels: { color: muted, boxWidth: 10, padding: 14 } } },
+        cutout: '68%'
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

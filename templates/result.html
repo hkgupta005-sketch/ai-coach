@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}ATS Result — CoachAI{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top:140px;">
+  <div class="container">
+
+    {% if not ats %}
+    <div class="section-head">
+      <h2>No scan yet</h2>
+      <p>Upload a resume to see a real ATS breakdown here.</p>
+    </div>
+    <div class="text-center">
+      <a href="{{ url_for('upload') }}" class="magnetic-wrap magnetic"><button class="btn-ai btn-ai-primary">Upload Resume <i class="bi bi-upload"></i></button></a>
+    </div>
+
+    {% else %}
+    <div class="section-head">
+      <h2>Your ATS Result</h2>
+      <p>{{ filename }} — here's exactly how an applicant tracking system parses it.</p>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-4">
+        <div class="glass p-4 text-center h-100 d-flex flex-column justify-content-center">
+          <div class="score-ring-wrap">
+            <svg width="180" height="180" class="progress-ring">
+              <circle cx="90" cy="90" r="78" stroke="var(--bg-panel-2)" stroke-width="14" fill="none"/>
+              <circle id="score-circle" cx="90" cy="90" r="78" stroke="url(#grad)" stroke-width="14" fill="none"
+                      stroke-linecap="round" stroke-dasharray="490" stroke-dashoffset="490"
+                      transform="rotate(-90 90 90)"/>
+              <defs>
+                <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="var(--accent-violet)"/>
+                  <stop offset="100%" stop-color="var(--accent-cyan)"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="score-ring-num">
+              <div class="val counter" data-target="{{ ats.score }}" data-suffix="">0</div>
+              <div class="text-muted-c small">ATS Score</div>
+            </div>
+          </div>
+          <p class="text-muted-c mt-3 mb-0">{{ ats.verdict }}</p>
+        </div>
+      </div>
+
+      <div class="col-lg-8">
+        <div class="row g-4">
+          <div class="col-md-6">
+            <div class="glass p-4 h-100 reveal-up">
+              <h6 class="text-muted-c text-uppercase small mb-3">Matching Skills</h6>
+              {% for kw in ats.matched_keywords %}
+              <span class="tag-pill tag-good">{{ kw }}</span>
+              {% else %}
+              <span class="text-muted-c small">None detected.</span>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="glass p-4 h-100 reveal-up">
+              <h6 class="text-muted-c text-uppercase small mb-3">Missing Skills</h6>
+              {% for kw in ats.missing_keywords %}
+              <span class="tag-pill tag-bad">{{ kw }}</span>
+              {% else %}
+              <span class="text-muted-c small">No major gaps found.</span>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="glass p-4 h-100 reveal-up">
+              <h6 class="text-muted-c text-uppercase small mb-3"><i class="bi bi-check-circle me-1"></i> Strengths</h6>
+              <ul class="mb-0" style="color:var(--text-primary);">
+                {% for s in ats.strengths %}
+                <li class="mb-2">{{ s }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="glass p-4 h-100 reveal-up">
+              <h6 class="text-muted-c text-uppercase small mb-3"><i class="bi bi-exclamation-triangle me-1"></i> Weaknesses</h6>
+              <ul class="mb-0" style="color:var(--text-primary);">
+                {% for w in ats.weaknesses %}
+                <li class="mb-2">{{ w }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="glass p-4 reveal-up">
+              <h6 class="text-muted-c text-uppercase small mb-3">Suggestions</h6>
+              <ul class="mb-0" style="color:var(--text-primary);">
+                {% for s in ats.suggestions %}
+                <li class="mb-2">{{ s }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mt-5">
+      <a href="{{ url_for('interview') }}" class="magnetic-wrap magnetic"><button class="btn-ai btn-ai-primary">Start Mock Interview <i class="bi bi-arrow-right"></i></button></a>
+      <a href="{{ url_for('upload') }}" class="magnetic-wrap magnetic ms-2"><button class="btn-ai btn-ai-ghost">Re-scan Resume <i class="bi bi-arrow-clockwise"></i></button></a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const circle = document.getElementById('score-circle');
+  if(!circle) return;
+  setTimeout(() => {
+    animateCounters();
+    const circumference = 490;
+    const target = {{ ats.score if ats else 0 }};
+    circle.style.strokeDashoffset = circumference - (circumference * target / 100);
+  }, 300);
+});
+</script>
+{% endblock %}

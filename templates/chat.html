@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}AI Chat — CoachAI{% endblock %}
+{% set active = 'chat' %}
+
+{% block content %}
+<section class="section" style="padding-top:140px;">
+  <div class="container">
+
+    {% if not has_resume %}
+    <div class="glass p-3 mb-3 d-flex align-items-center gap-3">
+      <i class="bi bi-info-circle" style="color:var(--accent-cyan); font-size:1.3rem;"></i>
+      <div class="flex-grow-1">
+        <span class="text-muted-c">No resume on file yet — I can still give general advice, but </span>
+        <a href="{{ url_for('upload') }}" style="color:var(--accent-cyan);">upload your resume</a>
+        <span class="text-muted-c"> for answers grounded in your actual experience.</span>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="chat-shell glass">
+      <div class="chat-sidebar">
+        <div class="text-muted-c small text-uppercase mb-2">Quick scenarios</div>
+        <div class="chat-history-item scenario-btn" data-scenario="swe_review" data-label="SWE Role Review">💻 SWE Role Review</div>
+        <div class="chat-history-item scenario-btn" data-scenario="ats_gap" data-label="ATS Gap Analysis">🔍 ATS Gap Analysis</div>
+        <div class="chat-history-item scenario-btn" data-scenario="salary" data-label="Salary Negotiation Tips">💰 Salary Negotiation</div>
+        <div class="chat-history-item scenario-btn" data-scenario="interview_prep" data-label="Mock Interview Questions">🎯 Interview Questions</div>
+        <div class="chat-history-item scenario-btn" data-scenario="cover_letter" data-label="Cover Letter Draft">✉️ Cover Letter Draft</div>
+      </div>
+      <div class="chat-main">
+        <div class="chat-msgs" id="chat-msgs">
+          <div class="msg-row">
+            <div class="msg-avatar ai"><i class="bi bi-stars"></i></div>
+            <div class="msg-bubble">Hi! {% if has_resume %}I've read your resume — {% endif %}ask me anything about your ATS score, interview prep, or how to strengthen a specific bullet point. Or pick a quick scenario on the left.</div>
+          </div>
+        </div>
+        <div class="chat-input-bar">
+          <input type="text" id="chat-input" placeholder="Ask your AI coach anything…">
+          <button class="btn-ai btn-ai-primary magnetic" id="chat-send"><i class="bi bi-send"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const msgs = document.getElementById('chat-msgs');
+  const input = document.getElementById('chat-input');
+  const send = document.getElementById('chat-send');
+  const scenarioBtns = document.querySelectorAll('.scenario-btn');
+
+  function scrollDown(){ msgs.scrollTop = msgs.scrollHeight; }
+
+  function addUserMsg(text){
+    const row = document.createElement('div');
+    row.className = 'msg-row user';
+    row.innerHTML = `<div class="msg-avatar user"><i class="bi bi-person"></i></div><div class="msg-bubble"></div>`;
+    row.querySelector('.msg-bubble').textContent = text;
+    msgs.appendChild(row);
+    scrollDown();
+  }
+
+  function addTyping(){
+    const row = document.createElement('div');
+    row.className = 'msg-row ai-typing';
+    row.innerHTML = `<div class="msg-avatar ai"><i class="bi bi-stars"></i></div>
+      <div class="msg-bubble typing-dots"><span></span><span></span><span></span></div>`;
+    msgs.appendChild(row);
+    scrollDown();
+    return row;
+  }
+
+  function streamReply(text){
+    const row = document.createElement('div');
+    row.className = 'msg-row';
+    row.innerHTML = `<div class="msg-avatar ai"><i class="bi bi-stars"></i></div><div class="msg-bubble"></div>`;
+    msgs.appendChild(row);
+    const bubble = row.querySelector('.msg-bubble');
+    let i = 0;
+    const interval = setInterval(() => {
+      bubble.textContent += text[i];
+      i++;
+      scrollDown();
+      if(i >= text.length) clearInterval(interval);
+    }, 12);
+  }
+
+  async function sendPayload(payload, userLabel){
+    addUserMsg(userLabel);
+    send.disabled = true;
+    scenarioBtns.forEach(b => b.style.pointerEvents = 'none');
+    const typingRow = addTyping();
+
+    try{
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      typingRow.remove();
+      streamReply(data.reply || "Sorry, I didn't catch that — try again?");
+    }catch(err){
+      typingRow.remove();
+      streamReply("Couldn't reach the AI coach — check your connection and try again.");
+    }finally{
+      send.disabled = false;
+      scenarioBtns.forEach(b => b.style.pointerEvents = 'auto');
+    }
+  }
+
+  function handleSend(){
+    const text = input.value.trim();
+    if(!text) return;
+    input.value = '';
+    sendPayload({ message: text, label: text }, text);
+  }
+
+  send.addEventListener('click', handleSend);
+  input.addEventListener('keydown', e => { if(e.key === 'Enter') handleSend(); });
+
+  scenarioBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const scenario = btn.dataset.scenario;
+      const label = btn.dataset.label;
+      sendPayload({ scenario, label }, label);
+    });
+  });
+});
+</script>
+{% endblock %}

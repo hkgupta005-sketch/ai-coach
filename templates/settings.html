@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Settings — CoachAI{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top:140px;">
+  <div class="container" style="max-width:700px;">
+    <div class="section-head">
+      <h2>Settings</h2>
+      <p>Manage your profile, notifications, and appearance.</p>
+    </div>
+
+    <div class="glass p-4 mb-4">
+      <h6 class="text-muted-c text-uppercase small mb-3">Profile</h6>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label small text-muted-c">Full name</label>
+          <input type="text" class="form-control" value="Alex Morgan" style="background:var(--bg-panel-2); border:1px solid var(--glass-border); color:var(--text-primary);">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small text-muted-c">Target role</label>
+          <input type="text" class="form-control" value="Backend Engineer" style="background:var(--bg-panel-2); border:1px solid var(--glass-border); color:var(--text-primary);">
+        </div>
+      </div>
+    </div>
+
+    <div class="glass p-4 mb-4 d-flex justify-content-between align-items-center">
+      <div>
+        <h6 class="mb-1">Appearance</h6>
+        <p class="text-muted-c small mb-0">Toggle between light and dark themes — your choice is saved automatically.</p>
+      </div>
+      <div class="theme-toggle" id="theme-toggle-2"><div class="knob">🌙</div></div>
+    </div>
+
+    <div class="glass p-4 d-flex justify-content-between align-items-center">
+      <div>
+        <h6 class="mb-1">Weekly email digest</h6>
+        <p class="text-muted-c small mb-0">Get a summary of your ATS score changes and interview activity.</p>
+      </div>
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" style="width:44px; height:24px;" checked>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.getElementById('theme-toggle-2').addEventListener('click', () => document.getElementById('theme-toggle').click());
+</script>
+{% endblock %}

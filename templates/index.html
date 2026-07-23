@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}AI Interview & Resume Coach — Land the Offer{% endblock %}
+
+{% block content %}
+<!-- HERO -->
+<section class="hero-section">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6">
+        <div class="eyebrow-pill"><span class="dot"></span> AI Career Intelligence, Live</div>
+        <h1 class="hero-title">
+          Your resume, <span class="grad">rebuilt by AI.</span><br>
+          Your interview, <span class="grad">rehearsed to win.</span>
+        </h1>
+        <p class="hero-sub">An intelligent platform that analyzes resumes, improves ATS scores, prepares candidates for interviews, and acts as a full-time AI career coach — available whenever you need it.</p>
+        <div class="hero-actions">
+          <a href="{{ url_for('upload') }}" class="magnetic-wrap magnetic"><button class="btn-ai btn-ai-primary">Get Started <i class="bi bi-arrow-right"></i></button></a>
+          <a href="{{ url_for('interview') }}" class="magnetic-wrap magnetic"><button class="btn-ai btn-ai-ghost">Try Demo <i class="bi bi-play-circle"></i></button></a>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat"><div class="num counter" data-target="94" data-suffix="%">0%</div><div class="label">Avg. ATS score lift</div></div>
+          <div class="hero-stat"><div class="num counter" data-target="12" data-suffix="k+">0</div><div class="label">Interviews coached</div></div>
+          <div class="hero-stat"><div class="num counter" data-target="4.9" data-suffix="/5">0</div><div class="label">Candidate rating</div></div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="hero-orb-stage">
+          <div class="orb-ring" style="width:300px;height:300px;"></div>
+          <div class="orb-ring" style="width:380px;height:380px;"></div>
+          <div id="ai-orb" title="Drag me, throw me, click me for a tip"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="container">
+    <div class="section-head">
+      <h2>Everything a career coach does. <span class="grad">Instantly.</span></h2>
+      <p>Eight focused tools, one continuous feedback loop between your resume and your next interview.</p>
+    </div>
+    <div class="row g-4">
+      {% set feats = [
+        ("bi-file-earmark-text", "Resume Analysis", "Deep parsing of structure, tone, and impact — section by section."),
+        ("bi-speedometer2", "ATS Score", "See exactly how applicant tracking systems read your resume."),
+        ("bi-magic", "Resume Optimization", "Rewrites weak bullets into quantified, keyword-matched wins."),
+        ("bi-mic", "Mock Interview", "Timed, role-specific questions with real-time AI feedback."),
+        ("bi-compass", "AI Career Coach", "Ongoing guidance on roles, gaps, and negotiation."),
+        ("bi-chat-dots", "RAG Chat", "Ask anything — answers grounded in your actual resume."),
+        ("bi-search", "Web Search Agent", "Pulls live market and company data into your prep."),
+        ("bi-cpu", "Multi LLM", "Routes each task to the model best suited for it."),
+      ] %}
+      {% for icon, title, desc in feats %}
+      <div class="col-md-6 col-lg-3">
+        <div class="feature-card glass">
+          <div class="feature-icon"><i class="bi {{ icon }}"></i></div>
+          <h5>{{ title }}</h5>
+          <p>{{ desc }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- SKILL BUBBLES -->
+<section class="section pt-0">
+  <div class="container">
+    <div class="section-head">
+      <h2>Built on the stack it teaches you to talk about</h2>
+      <p>Drag, throw, and collide the technologies powering your coach.</p>
+    </div>
+    <div id="bubble-stage" class="glass"></div>
+  </div>
+</section>
+
+<!-- 3D CUBE NAV -->
+<section class="section pt-0">
+  <div class="container">
+    <div class="section-head">
+      <h2>Six tools. One cube.</h2>
+      <p>Drag to rotate — click a face to jump straight in.</p>
+    </div>
+    <div class="cube-stage">
+      <div class="cube" id="ai-cube">
+        <div class="cube-face front" data-href="{{ url_for('upload') }}">Resume</div>
+        <div class="cube-face back" data-href="{{ url_for('dashboard') }}">Dashboard</div>
+        <div class="cube-face right" data-href="{{ url_for('upload') }}">ATS</div>
+        <div class="cube-face left" data-href="{{ url_for('interview') }}">Interview</div>
+        <div class="cube-face top" data-href="{{ url_for('chat') }}">Chat</div>
+        <div class="cube-face bottom" data-href="{{ url_for('settings') }}">Settings</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3D GLOBE -->
+<section class="section pt-0">
+  <div class="container">
+    <div class="section-head">
+      <h2>Coaching candidates, everywhere</h2>
+      <p>Drag to rotate, scroll to zoom, click a glowing city to see it light up.</p>
+    </div>
+    <div class="glass globe-stage">
+      <div id="globe-canvas"></div>
+    </div>
+    <div class="globe-legend">
+      <span class="tag-pill tag-good">🇮🇳 India</span>
+      <span class="tag-pill tag-good">🇺🇸 USA</span>
+      <span class="tag-pill tag-good">🇩🇪 Germany</span>
+      <span class="tag-pill tag-good">🇯🇵 Japan</span>
+      <span class="tag-pill tag-good">🇨🇦 Canada</span>
+    </div>
+  </div>
+</section>
+
+<!-- NEURAL NETWORK -->
+<section class="section pt-0">
+  <div class="container">
+    <div class="section-head">
+      <h2>How the AI actually thinks</h2>
+      <p>Drag a node to move it. Click one node, then another, to wire a new connection. Hover to trace a path.</p>
+    </div>
+    <div class="glass neural-stage">
+      <canvas id="neural-canvas"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- PHYSICS PLAYGROUND -->
+<section class="section pt-0">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+      <div>
+        <h2 class="mb-2">Physics playground</h2>
+        <p class="text-muted-c mb-0">Drag the stack, throw it around, watch it collide. No purpose — just fun.</p>
+      </div>
+      <button class="btn-ai btn-ai-ghost magnetic" id="physics-reset" type="button">Reset <i class="bi bi-arrow-counterclockwise"></i></button>
+    </div>
+    <div class="glass" id="physics-stage"></div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section">
+  <div class="container">
+    <div class="glass p-5 text-center">
+      <h2 class="mb-3">Ready to see your ATS score?</h2>
+      <p class="text-muted-c mb-4">Upload a resume and get a full breakdown in under a minute.</p>
+      <a href="{{ url_for('upload') }}" class="magnetic-wrap magnetic"><button class="btn-ai btn-ai-primary">Upload Resume <i class="bi bi-upload"></i></button></a>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
+<script>
+  window.addEventListener('load', () => setTimeout(() => animateCounters(), 300));
+</script>
+{% endblock %}

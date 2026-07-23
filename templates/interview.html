@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Mock Interview — CoachAI{% endblock %}
+{% set active = 'interview' %}
+
+{% block content %}
+<section class="section" style="padding-top:140px;">
+  <div class="container" style="max-width:800px;">
+    <div class="section-head">
+      <h2>Mock Interview</h2>
+      <p>Pick a track, then answer out loud or by typing — real AI feedback after every answer.</p>
+    </div>
+
+    <div id="role-picker" class="glass p-4 mb-4">
+      <h6 class="text-muted-c text-uppercase small mb-3">Choose interview type</h6>
+      <div class="d-flex flex-wrap gap-2">
+        {% for key, label in roles.items() %}
+        <button class="btn-ai btn-ai-ghost magnetic role-btn" data-role="{{ key }}" type="button">{{ label }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="glass interview-card d-none" id="interview-card">
+      <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+          <span class="text-muted-c small text-uppercase" id="question-meta">Question 1 · <span id="role-label"></span></span>
+          <h4 class="mt-2 mb-0" id="question-text">Loading your first question…</h4>
+        </div>
+        <div class="text-center">
+          <svg width="90" height="90">
+            <circle cx="45" cy="45" r="38" stroke="var(--bg-panel-2)" stroke-width="7" fill="none"/>
+            <circle id="timer-circle" cx="45" cy="45" r="38" stroke="var(--accent-cyan)" stroke-width="7" fill="none"
+                    stroke-dasharray="239" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 45 45)"/>
+          </svg>
+          <div id="timer-text" class="text-mono small mt-1">02:00</div>
+        </div>
+      </div>
+
+      <textarea class="form-control mb-3" id="answer-box" rows="5" placeholder="Type your answer, or use the mic…"
+        style="background:var(--bg-panel-2); border:1px solid var(--glass-border); color:var(--text-primary); border-radius:16px; padding:16px;"></textarea>
+
+      <div class="d-flex align-items-center gap-3 mb-4">
+        <button class="voice-btn" id="voice-btn"><i class="bi bi-mic-fill"></i></button>
+        <span class="text-muted-c small" id="voice-status">Tap to simulate voice answer</span>
+        <button class="btn-ai btn-ai-primary magnetic ms-auto" id="submit-answer">Submit Answer <i class="bi bi-send"></i></button>
+      </div>
+
+      <div id="feedback-area" class="d-none">
+        <hr style="border-color:var(--glass-border);">
+        <h6 class="text-muted-c text-uppercase small mb-2">AI Feedback</h6>
+        <p id="feedback-text"></p>
+        <div class="d-flex justify-content-between small text-muted-c mb-1">
+          <span>This answer</span><span id="perf-score">—</span>
+        </div>
+        <div class="perf-meter"><div class="fill" id="perf-fill"></div></div>
+        <div class="text-end mt-3">
+          <button class="btn-ai btn-ai-ghost magnetic" id="next-question-btn">Next Question <i class="bi bi-arrow-right"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const rolePicker = document.getElementById('role-picker');
+  const card = document.getElementById('interview-card');
+  const questionText = document.getElementById('question-text');
+  const roleLabelEl = document.getElementById('role-label');
+  const questionMeta = document.getElementById('question-meta');
+  const answerBox = document.getElementById('answer-box');
+  const submitBtn = document.getElementById('submit-answer');
+  const feedbackArea = document.getElementById('feedback-area');
+  const feedbackText = document.getElementById('feedback-text');
+  const perfScore = document.getElementById('perf-score');
+  const perfFill = document.getElementById('perf-fill');
+  const nextBtn = document.getElementById('next-question-btn');
+  const timerText = document.getElementById('timer-text');
+  const timerCircle = document.getElementById('timer-circle');
+
+  let questionCount = 1;
+  let countdown = null;
+  const circumference = 239;
+
+  function startTimer(){
+    clearInterval(countdown);
+    let total = 120, remaining = 120;
+    function render(){
+      const m = Math.floor(remaining/60).toString().padStart(2,'0');
+      const s = (remaining%60).toString().padStart(2,'0');
+      timerText.textContent = `${m}:${s}`;
+      timerCircle.style.strokeDashoffset = circumference * (1 - remaining/total);
+    }
+    render();
+    countdown = setInterval(() => {
+      remaining--;
+      if(remaining <= 0){ remaining = 0; clearInterval(countdown); }
+      render();
+    }, 1000);
+  }
+
+  async function startInterview(role, roleLabel){
+    rolePicker.classList.add('d-none');
+    card.classList.remove('d-none');
+    questionText.textContent = 'Loading your first question…';
+    roleLabelEl.textContent = roleLabel;
+    questionCount = 1;
+    questionMeta.innerHTML = `Question ${questionCount} · <span id="role-label">${roleLabel}</span>`;
+
+    try{
+      const res = await fetch('/api/interview/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role })
+      });
+      const data = await res.json();
+      questionText.textContent = data.question || 'Tell me about yourself.';
+      startTimer();
+    }catch(err){
+      questionText.textContent = "Couldn't reach the AI interviewer — check your connection.";
+    }
+  }
+
+  document.querySelectorAll('.role-btn').forEach(btn => {
+    btn.addEventListener('click', () => startInterview(btn.dataset.role, btn.textContent.trim()));
+  });
+
+  const voiceBtn = document.getElementById('voice-btn');
+  const voiceStatus = document.getElementById('voice-status');
+  let recording = false;
+  voiceBtn.addEventListener('click', () => {
+    recording = !recording;
+    voiceBtn.classList.toggle('recording', recording);
+    voiceStatus.textContent = recording ? 'Listening… (tap again to stop)' : 'Tap to simulate voice answer';
+  });
+
+  submitBtn.addEventListener('click', async () => {
+    const answer = answerBox.value.trim();
+    if(!answer){ answerBox.focus(); return; }
+    clearInterval(countdown);
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Scoring…';
+
+    try{
+      const res = await fetch('/api/interview/answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answer })
+      });
+      const data = await res.json();
+
+      feedbackArea.classList.remove('d-none');
+      feedbackText.textContent = data.feedback || '';
+      perfScore.textContent = (data.score ?? '—') + '%';
+      perfFill.style.width = '0%';
+      setTimeout(() => perfFill.style.width = (data.score || 0) + '%', 100);
+
+      nextBtn.dataset.nextQuestion = data.next_question || '';
+      feedbackArea.scrollIntoView({behavior:'smooth', block:'nearest'});
+      showToast('Feedback ready — check your score below.');
+    }catch(err){
+      feedbackArea.classList.remove('d-none');
+      feedbackText.textContent = "Couldn't reach the AI interviewer — check your connection and try again.";
+    }finally{
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = 'Submit Answer <i class="bi bi-send"></i>';
+    }
+  });
+
+  nextBtn.addEventListener('click', () => {
+    questionCount++;
+    questionMeta.innerHTML = `Question ${questionCount} · <span id="role-label">${roleLabelEl.textContent}</span>`;
+    questionText.textContent = nextBtn.dataset.nextQuestion || 'Tell me more about your experience.';
+    answerBox.value = '';
+    feedbackArea.classList.add('d-none');
+    startTimer();
+  });
+});
+</script>
+{% endblock %}
